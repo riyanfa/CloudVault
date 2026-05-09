@@ -20,5 +20,7 @@ class File(models.Model):
     file_uuid = models.UUIDField(null=True,editable=False,unique=True)
     file = models.FileField(upload_to=user_directory_path)
     uploaded_at = models.DateTimeField(auto_now_add=True)
+    Folder=models.ForeignKey('self',on_delete=models.CASCADE,null=True,blank=True,related_name='folders')
+    shared_with = models.ManyToManyField(User, related_name="shared_files")
     def __str__(self):
         return self.file_name
