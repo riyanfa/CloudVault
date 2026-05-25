@@ -20,7 +20,24 @@ class FolderViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Folder.objects.filter(owner=self.request.user).order_by("-created_at")
+        return Folder.objects.filter(
+            Q(owner=self.request.user) |
+            Q(shared_with=self.request.user)
+        ).distinct().order_by("-created_at")
+
+    def perform_update(self, serializer):
+        folder = self.get_object()
+
+        if folder.owner != self.request.user:
+            raise ValidationError({"detail": "Only the owner can update this folder."})
+
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if instance.owner != self.request.user:
+            raise ValidationError({"detail": "Only the owner can delete this folder."})
+
+        instance.delete()
 
     def perform_create(self, serializer):
         folder_name = self.request.data.get("folder_name")
@@ -85,7 +102,7 @@ class FolderViewSet(ModelViewSet):
         ))
 
     @action(detail=True, methods=['post'], url_path='remove_share', parser_classes=[JSONParser])
-    def remove_share(self, request, pk=None):
+    def remove_share(self, request, folder_uuid=None):
         folder_obj = self.get_object()
 
         if folder_obj.owner != request.user:
@@ -131,7 +148,7 @@ class FileViewSet(ModelViewSet):
         folder_uuid = self.request.data.get('folder_uuid')
         if folder_uuid:
             try:
-                folder_instance = Folder.objects.get(folder_uuid=folder_uuid)
+                folder_instance = Folder.objects.get(owner=self.request.user,folder_uuid=folder_uuid)
             except Folder.DoesNotExist:
                 raise ValidationError({"folder_uuid": "Folder does not exist."})
         serializer.save(
@@ -143,10 +160,21 @@ class FileViewSet(ModelViewSet):
         )
 
     def perform_update(self, serializer):
-        if "file" in self.request.FILES or "file" in self.request.data:
-            raise ValidationError({"file": "File cannot be updated."})
-        serializer.save()
+            file_obj = self.get_object()
 
+            if file_obj.owner != self.request.user:
+                raise ValidationError({"detail": "Only the owner can update this file."})
+
+            if "file" in self.request.FILES or "file" in self.request.data:
+                raise ValidationError({"file": "File cannot be updated."})
+
+            serializer.save()
+
+    def perform_destroy(self, instance):
+        if instance.owner != self.request.user:
+            raise ValidationError({"detail": "Only the owner can delete this file."})
+
+        instance.delete()
     @action(detail=True, methods=['get'])
     def download(self, request, file_uuid=None):
         file_obj = self.get_object()

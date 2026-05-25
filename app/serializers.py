@@ -4,12 +4,23 @@ from rest_framework import serializers
 from .models import File,Folder
 
 class FolderSerializer(serializers.ModelSerializer):
+    is_owner = serializers.SerializerMethodField()
     # pyrefly: ignore [bad-override]
     class Meta:
         model=Folder
-        fields=["folder_uuid","folder_name","parent_folder"]
-        read_only_fields=["folder_uuid"]
+        fields=["folder_uuid","folder_name","parent_folder","is_owner"]
+        read_only_fields=["folder_uuid","is_owner"]
+
+    def get_is_owner(self, obj):
+        request = self.context.get("request")
+
+        if not request:
+            return False
+        return obj.owner == request.user
+
+
 class FileSerializer(serializers.ModelSerializer):
+    is_owner = serializers.SerializerMethodField()
     owner_username = serializers.CharField(
             source="owner.username",
             read_only=True
@@ -28,11 +39,13 @@ class FileSerializer(serializers.ModelSerializer):
             "file_size",
             "folder",
             "uploaded_at",
+            "is_owner"
         ]
         read_only_fields = [
             "file_type",
             "file_size",
             "uploaded_at",
+            "is_owner"
         ]
 
     def validate_file_name(self,value):
@@ -46,6 +59,12 @@ class FileSerializer(serializers.ModelSerializer):
         if value in [".",".."]:
             raise serializers.ValidationError("File name cannot be '.' or '..'")
         return value
+    def get_is_owner(self,obj):
+        request=self.context.get("request")
+
+        if not request:
+            return False
+        return obj.owner == request.user
 
 
 class RegisterSerializer(serializers.ModelSerializer):
