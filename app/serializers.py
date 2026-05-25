@@ -1,8 +1,14 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
-from .models import File
+from .models import File,Folder
 
+class FolderSerializer(serializers.ModelSerializer):
+    # pyrefly: ignore [bad-override]
+    class Meta:
+        model=Folder
+        fields=["folder_uuid","folder_name","parent_folder"]
+        read_only_fields=["folder_uuid"]
 class FileSerializer(serializers.ModelSerializer):
     owner_username = serializers.CharField(
             source="owner.username",
@@ -10,6 +16,7 @@ class FileSerializer(serializers.ModelSerializer):
         )
     file_name=serializers.CharField(required=False)
 
+    # pyrefly: ignore [bad-override]
     class Meta:
         model = File
         fields = [
@@ -19,6 +26,7 @@ class FileSerializer(serializers.ModelSerializer):
             "file_name",
             "file_type",
             "file_size",
+            "folder",
             "uploaded_at",
         ]
         read_only_fields = [
@@ -43,6 +51,7 @@ class FileSerializer(serializers.ModelSerializer):
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
 
+    # pyrefly: ignore [bad-override]
     class Meta:
         model = User
         fields = ["username", "email", "password"]
