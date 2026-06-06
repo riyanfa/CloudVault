@@ -3,6 +3,8 @@ import uuid
 
 from django.conf import settings
 from django.db import models
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 
 
 # Create your models here.
@@ -55,3 +57,9 @@ class File(models.Model):
 
     def __str__(self):
         return self.file_name
+
+
+@receiver(post_delete, sender=File)
+def delete_file_from_storage(sender, instance, **kwargs):
+    if instance.file:
+        instance.file.delete(save=False)

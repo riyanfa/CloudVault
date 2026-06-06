@@ -16,6 +16,7 @@ This project is built for education and portfolio demonstration. It is not produ
 - Shared access is read-only for non-owners
 - Direct file sharing by username
 - File metadata tracking: original file name, content type, size, upload timestamp, owner username
+- File upload validation for size, content type, extension, and empty files
 - UUID-based file and folder lookups
 - API tests covering ownership, sharing, nested folder access, and validation
 
@@ -30,13 +31,13 @@ This project is built for education and portfolio demonstration. It is not produ
 
 ## Local Development Notes
 
-This project currently uses SQLite for local development. File storage is currently local in the active API flow while S3/private object storage integration is being developed.
+This project currently uses SQLite and local media storage for development. Uploaded files are stored under the configured `MEDIA_ROOT`; S3/private object storage integration is being developed.
 
 Important limitations:
 
 - `DEBUG=True` is enabled for local development.
 - `SECRET_KEY` is hardcoded for education/local use.
-- Uploaded file content type comes from the request and is not deeply validated.
+- Upload validation is basic and should still be hardened before production.
 - There is no trash/recycle-bin flow; deleting a folder cascades to its subfolders and files.
 - S3/private object storage integration is in progress and is not yet the active storage flow.
 

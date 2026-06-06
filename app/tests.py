@@ -9,7 +9,6 @@ from rest_framework.test import APITestCase
 
 from .models import File, Folder
 
-
 TEST_MEDIA_ROOT = tempfile.mkdtemp()
 
 
@@ -22,7 +21,9 @@ class CloudVaultAPITests(APITestCase):
 
     def setUp(self):
         self.owner = User.objects.create_user(username="owner", password="password")
-        self.other_user = User.objects.create_user(username="other", password="password")
+        self.other_user = User.objects.create_user(
+            username="other", password="password"
+        )
 
     def authenticate(self, user):
         self.client.force_authenticate(user=user)
@@ -134,6 +135,87 @@ class CloudVaultAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("folder", response.data)
+
+    def test_upload_file_rejects_empty_file(self):
+        self.authenticate(self.owner)
+
+        response = self.client.post(
+            "/api/files/",
+            {
+                "file": SimpleUploadedFile(
+                    "empty.txt",
+                    b"",
+                    content_type="text/plain",
+                ),
+            },
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("file", response.data)
+
+    def test_upload_file_rejects_disallowed_type(self):
+        self.authenticate(self.owner)
+
+        response = self.client.post(
+            "/api/files/",
+            {
+                "file": SimpleUploadedFile(
+                    "script.exe",
+                    b"hello",
+                    content_type="application/x-msdownload",
+                ),
+            },
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("file", response.data)
+
+    def test_upload_file_rejects_oversized_file(self):
+        self.authenticate(self.owner)
+
+        with override_settings(CLOUDVAULT_MAX_UPLOAD_SIZE=4):
+            response = self.client.post(
+                "/api/files/",
+                {
+                    "file": SimpleUploadedFile(
+                        "large.txt",
+                        b"hello",
+                        content_type="text/plain",
+                    ),
+                },
+                format="multipart",
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("file", response.data)
+
+    def test_delete_file_removes_uploaded_file_from_storage(self):
+        self.authenticate(self.owner)
+
+        upload_response = self.client.post(
+            "/api/files/",
+            {
+                "file": SimpleUploadedFile(
+                    "delete.txt",
+                    b"hello",
+                    content_type="text/plain",
+                ),
+            },
+            format="multipart",
+        )
+
+        self.assertEqual(upload_response.status_code, status.HTTP_201_CREATED)
+        file_obj = File.objects.get(file_name="delete.txt")
+        storage = file_obj.file.storage
+        file_name = file_obj.file.name
+        self.assertTrue(storage.exists(file_name))
+
+        delete_response = self.client.delete(f"/api/files/{file_obj.file_uuid}/")
+
+        self.assertEqual(delete_response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(storage.exists(file_name))
 
     def test_shared_folder_files_lists_files_for_shared_user(self):
         folder = Folder.objects.create(owner=self.owner, folder_name="Shared")

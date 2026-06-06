@@ -140,3 +140,16 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = "static/"
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+CLOUDVAULT_MAX_UPLOAD_SIZE = 10 * 1024 * 1024
+CLOUDVAULT_ALLOWED_FILE_TYPES = [
+    "application/pdf",
+    "image/jpeg",
+    "image/png",
+    "text/plain",
+]
+
+CLOUDVAULT_ALLOWED_FILE_EXTENSIONS = [".pdf", ".jpg", ".jpeg", ".png", ".txt"]

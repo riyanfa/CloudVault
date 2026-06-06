@@ -1,3 +1,6 @@
+import os
+
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import (
     validate_password as validate_django_password,
@@ -125,6 +128,29 @@ class FileSerializer(serializers.ModelSerializer):
             "uploaded_at",
             "is_owner",
         ]
+
+    def validate_file(self, uploaded_file):
+        max_size = settings.CLOUDVAULT_MAX_UPLOAD_SIZE
+        allowed_types = settings.CLOUDVAULT_ALLOWED_FILE_TYPES
+        allowed_extensions = settings.CLOUDVAULT_ALLOWED_FILE_EXTENSIONS
+        extension = os.path.splitext(uploaded_file.name)[1].lower()
+
+        if uploaded_file.size == 0:
+            raise serializers.ValidationError("File cannot be empty.")
+
+        if uploaded_file.size > max_size:
+            max_size_mb = max_size // (1024 * 1024)
+            raise serializers.ValidationError(
+                f"File size cannot exceed {max_size_mb} MB."
+            )
+
+        if uploaded_file.content_type not in allowed_types:
+            raise serializers.ValidationError("File type is not allowed.")
+
+        if extension not in allowed_extensions:
+            raise serializers.ValidationError("File extension is not allowed.")
+
+        return uploaded_file
 
     def validate_file_name(self, value):
         value = value.strip()

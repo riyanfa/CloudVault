@@ -1,4 +1,5 @@
 /files/
+/media/
 /db.sqlite3
 /app/migrations/
 ### Python template
