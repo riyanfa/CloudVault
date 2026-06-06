@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<module type="PYTHON_MODULE" version="4">
+<module external.system.id="pyproject.toml" type="PYTHON_MODULE" version="4">
   <component name="FacetManager">
     <facet type="django" name="Django">
       <configuration>
@@ -20,7 +20,7 @@
       <excludeFolder url="file://$MODULE_DIR$/app/migrations" />
       <excludeFolder url="file://$MODULE_DIR$/files" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.14 (CloudVault)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="uv (CloudVault)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="TemplatesService">

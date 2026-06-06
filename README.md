@@ -43,31 +43,37 @@ Important limitations:
 
 ## Setup
 
-Create and activate a virtual environment, then install dependencies:
+This project uses `uv` with `pyproject.toml` and `uv.lock` for dependency management.
+
+Install dependencies:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+uv sync
 ```
 
 Apply migrations:
 
 ```bash
-python manage.py migrate
+uv run python manage.py migrate
 ```
 
 Run the development server:
 
 ```bash
-python manage.py runserver
+uv run python manage.py runserver
 ```
 
 Run checks and tests:
 
 ```bash
-python manage.py check
-python manage.py test app
+uv run python manage.py check
+uv run python manage.py test app
+```
+
+Regenerate the OpenAPI schema:
+
+```bash
+uv run python manage.py spectacular --file schema.yaml --validate
 ```
 
 ## API Overview
