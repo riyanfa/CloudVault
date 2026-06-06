@@ -1,0 +1,750 @@
+openapi: 3.0.3
+info:
+  title: CloudVault
+  version: 1.0.0
+  description: Cloud Storage
+paths:
+  /api/auth/login/:
+    post:
+      operationId: auth_login_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/auth/refresh/:
+    post:
+      operationId: auth_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/auth/register/:
+    post:
+      operationId: auth_register_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Register'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Register'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Register'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+          description: ''
+  /api/files/:
+    get:
+      operationId: files_list
+      tags:
+      - files
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/File'
+          description: ''
+    post:
+      operationId: files_create
+      tags:
+      - files
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/File'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/File'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/File'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/File'
+          description: ''
+  /api/files/{file_uuid}/:
+    get:
+      operationId: files_retrieve
+      parameters:
+      - in: path
+        name: file_uuid
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - files
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/File'
+          description: ''
+    put:
+      operationId: files_update
+      parameters:
+      - in: path
+        name: file_uuid
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - files
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/File'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/File'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/File'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/File'
+          description: ''
+    patch:
+      operationId: files_partial_update
+      parameters:
+      - in: path
+        name: file_uuid
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - files
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedFile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedFile'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFile'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/File'
+          description: ''
+    delete:
+      operationId: files_destroy
+      parameters:
+      - in: path
+        name: file_uuid
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - files
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/files/{file_uuid}/download/:
+    get:
+      operationId: files_download_retrieve
+      parameters:
+      - in: path
+        name: file_uuid
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - files
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/File'
+          description: ''
+  /api/files/{file_uuid}/remove_share/:
+    post:
+      operationId: files_remove_share_create
+      parameters:
+      - in: path
+        name: file_uuid
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - files
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/File'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/File'
+          description: ''
+  /api/files/{file_uuid}/share/:
+    post:
+      operationId: files_share_create
+      parameters:
+      - in: path
+        name: file_uuid
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - files
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/File'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/File'
+          description: ''
+  /api/folders/:
+    get:
+      operationId: folders_list
+      tags:
+      - folders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Folder'
+          description: ''
+    post:
+      operationId: folders_create
+      tags:
+      - folders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Folder'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Folder'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Folder'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Folder'
+          description: ''
+  /api/folders/{folder_uuid}/:
+    get:
+      operationId: folders_retrieve
+      parameters:
+      - in: path
+        name: folder_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this folder.
+        required: true
+      tags:
+      - folders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Folder'
+          description: ''
+    put:
+      operationId: folders_update
+      parameters:
+      - in: path
+        name: folder_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this folder.
+        required: true
+      tags:
+      - folders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Folder'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Folder'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Folder'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Folder'
+          description: ''
+    patch:
+      operationId: folders_partial_update
+      parameters:
+      - in: path
+        name: folder_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this folder.
+        required: true
+      tags:
+      - folders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFolder'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedFolder'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedFolder'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Folder'
+          description: ''
+    delete:
+      operationId: folders_destroy
+      parameters:
+      - in: path
+        name: folder_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this folder.
+        required: true
+      tags:
+      - folders
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/folders/{folder_uuid}/files/:
+    get:
+      operationId: folders_files_retrieve
+      parameters:
+      - in: path
+        name: folder_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this folder.
+        required: true
+      tags:
+      - folders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Folder'
+          description: ''
+  /api/folders/{folder_uuid}/remove_share/:
+    post:
+      operationId: folders_remove_share_create
+      parameters:
+      - in: path
+        name: folder_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this folder.
+        required: true
+      tags:
+      - folders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Folder'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Folder'
+          description: ''
+  /api/folders/{folder_uuid}/share/:
+    post:
+      operationId: folders_share_create
+      parameters:
+      - in: path
+        name: folder_uuid
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this folder.
+        required: true
+      tags:
+      - folders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Folder'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Folder'
+          description: ''
+  /api/whoami:
+    get:
+      operationId: whoami_retrieve
+      tags:
+      - whoami
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Whoami'
+          description: ''
+components:
+  schemas:
+    File:
+      type: object
+      properties:
+        file_uuid:
+          type: string
+          format: uuid
+          readOnly: true
+        file:
+          type: string
+          format: uri
+        owner_username:
+          type: string
+          readOnly: true
+        file_name:
+          type: string
+        file_type:
+          type: string
+          readOnly: true
+        file_size:
+          type: integer
+          readOnly: true
+        folder:
+          type: string
+          format: uuid
+          nullable: true
+        uploaded_at:
+          type: string
+          format: date-time
+          readOnly: true
+        is_owner:
+          type: boolean
+          readOnly: true
+      required:
+      - file
+      - file_size
+      - file_type
+      - file_uuid
+      - is_owner
+      - owner_username
+      - uploaded_at
+    Folder:
+      type: object
+      properties:
+        folder_uuid:
+          type: string
+          format: uuid
+          readOnly: true
+        folder_name:
+          type: string
+          maxLength: 255
+        parent_folder:
+          type: string
+          format: uuid
+          nullable: true
+        is_owner:
+          type: boolean
+          readOnly: true
+      required:
+      - folder_name
+      - folder_uuid
+      - is_owner
+    PatchedFile:
+      type: object
+      properties:
+        file_uuid:
+          type: string
+          format: uuid
+          readOnly: true
+        file:
+          type: string
+          format: uri
+        owner_username:
+          type: string
+          readOnly: true
+        file_name:
+          type: string
+        file_type:
+          type: string
+          readOnly: true
+        file_size:
+          type: integer
+          readOnly: true
+        folder:
+          type: string
+          format: uuid
+          nullable: true
+        uploaded_at:
+          type: string
+          format: date-time
+          readOnly: true
+        is_owner:
+          type: boolean
+          readOnly: true
+    PatchedFolder:
+      type: object
+      properties:
+        folder_uuid:
+          type: string
+          format: uuid
+          readOnly: true
+        folder_name:
+          type: string
+          maxLength: 255
+        parent_folder:
+          type: string
+          format: uuid
+          nullable: true
+        is_owner:
+          type: boolean
+          readOnly: true
+    Register:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - password
+      - username
+    RegisterResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+          nullable: true
+        message:
+          type: string
+        tokens:
+          $ref: '#/components/schemas/TokenPair'
+      required:
+      - email
+      - id
+      - message
+      - tokens
+      - username
+    TokenObtainPair:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - password
+      - refresh
+      - username
+    TokenPair:
+      type: object
+      properties:
+        refresh:
+          type: string
+        access:
+          type: string
+      required:
+      - access
+      - refresh
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          writeOnly: true
+      required:
+      - access
+      - refresh
+    Whoami:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        username:
+          type: string
+      required:
+      - user_id
+      - username
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/6.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
+
 from datetime import timedelta
 from pathlib import Path
 
@@ -32,13 +33,19 @@ SIMPLE_JWT = {
     "SLIDING_TOKEN_LIFETIME": timedelta(hours=12),
 }
 
+SPECTACULAR_SETTINGS = {
+    "TITLE": "CloudVault",
+    "DESCRIPTION": "Cloud Storage",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+}
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-    "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.IsAuthenticated",
-    ),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 # Application definition
@@ -52,7 +59,9 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework_simplejwt",
-    "app",    "django_extensions"
+    "app",
+    "django_extensions",
+    "drf_spectacular",
 ]
 
 MIDDLEWARE = [
@@ -70,8 +79,7 @@ ROOT_URLCONF = "cloudvault.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / 'templates']
-        ,
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
