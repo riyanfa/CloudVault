@@ -1,0 +1,172 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CloudVault</title>
+  <link rel="stylesheet" href="{% static 'app/dashboard.css' %}?v=2">
+</head>
+<body>
+  <main class="shell">
+    <section class="auth-panel" id="authPanel">
+      <div class="auth-media" aria-hidden="true">
+        <div class="vault-visual">
+          <div class="vault-door"></div>
+          <div class="vault-stack vault-stack-one"></div>
+          <div class="vault-stack vault-stack-two"></div>
+          <div class="vault-stack vault-stack-three"></div>
+        </div>
+      </div>
+
+      <div class="auth-card">
+        <div class="brand-row">
+          <span class="brand-mark">CV</span>
+          <span class="brand-name">CloudVault</span>
+        </div>
+
+        <div class="auth-tabs" role="tablist" aria-label="Authentication">
+          <button class="tab-button is-active" id="loginTab" type="button">Sign in</button>
+          <button class="tab-button" id="registerTab" type="button">Register</button>
+        </div>
+
+        <form class="auth-form" id="loginForm">
+          <label>
+            <span>Username</span>
+            <input name="username" autocomplete="username" required>
+          </label>
+          <label>
+            <span>Password</span>
+            <input name="password" type="password" autocomplete="current-password" required>
+          </label>
+          <button class="primary-button" type="submit">Sign in</button>
+        </form>
+
+        <form class="auth-form is-hidden" id="registerForm">
+          <label>
+            <span>Username</span>
+            <input name="username" autocomplete="username" required>
+          </label>
+          <label>
+            <span>Email</span>
+            <input name="email" type="email" autocomplete="email">
+          </label>
+          <label>
+            <span>Password</span>
+            <input name="password" type="password" autocomplete="new-password" required>
+          </label>
+          <button class="primary-button" type="submit">Create account</button>
+        </form>
+      </div>
+    </section>
+
+    <section class="app-panel is-hidden" id="appPanel">
+      <aside class="sidebar">
+        <div class="sidebar-head">
+          <div class="brand-row">
+            <span class="brand-mark">CV</span>
+            <span class="brand-name">CloudVault</span>
+          </div>
+          <button class="secondary-button compact-button" id="logoutButton" type="button">Sign out</button>
+        </div>
+
+        <div class="account-chip">
+          <span class="avatar" id="avatar">U</span>
+          <span id="currentUser">User</span>
+        </div>
+
+        <div class="sidebar-actions">
+          <button class="primary-button" id="uploadButton" type="button">Upload</button>
+          <button class="secondary-button" id="newFolderButton" type="button">Folder</button>
+          <input class="is-hidden" id="fileInput" type="file">
+        </div>
+
+        <nav class="folder-nav" aria-label="Folders">
+          <button class="folder-row is-active" id="allFilesButton" type="button">
+            <span class="folder-icon" aria-hidden="true"></span>
+            <span>Root</span>
+          </button>
+          <div id="folderTree"></div>
+        </nav>
+      </aside>
+
+      <section class="workspace">
+        <header class="workspace-toolbar">
+          <div>
+            <p class="eyebrow" id="locationLabel">Vault</p>
+            <h1 id="viewTitle">Root</h1>
+          </div>
+          <div class="toolbar-actions">
+            <label class="search-box">
+              <input id="searchInput" placeholder="Search">
+            </label>
+            <button class="secondary-button" id="refreshButton" type="button">Refresh</button>
+          </div>
+        </header>
+
+        <section class="stats-row" aria-label="Vault summary">
+          <div class="stat-block">
+            <span class="stat-value" id="fileCount">0</span>
+            <span class="stat-label">Files</span>
+          </div>
+          <div class="stat-block">
+            <span class="stat-value" id="folderCount">0</span>
+            <span class="stat-label">Folders</span>
+          </div>
+          <div class="stat-block">
+            <span class="stat-value" id="totalSize">0 B</span>
+            <span class="stat-label">Stored</span>
+          </div>
+        </section>
+
+        <section class="content-grid">
+          <div class="section-head">
+            <h2>Folders</h2>
+          </div>
+          <div class="tile-grid" id="folderGrid"></div>
+
+          <div class="section-head">
+            <h2>Files</h2>
+          </div>
+          <div class="file-table-wrap">
+            <table class="file-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th>Size</th>
+                  <th>Uploaded</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="fileTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <div class="modal-backdrop is-hidden" id="modalBackdrop">
+    <form class="modal" id="modalForm">
+      <div class="modal-head">
+        <h2 id="modalTitle">Action</h2>
+        <button class="icon-button" id="modalClose" type="button" aria-label="Close">x</button>
+      </div>
+      <label>
+        <span id="modalLabel">Value</span>
+        <input id="modalInput" required>
+        <select class="is-hidden" id="modalSelect"></select>
+      </label>
+      <div class="modal-actions">
+        <button class="secondary-button" id="modalCancel" type="button">Cancel</button>
+        <button class="primary-button" id="modalSubmit" type="submit">Save</button>
+      </div>
+    </form>
+  </div>
+
+  <script src="{% static 'app/dashboard.js' %}?v=2" defer></script>
+</body>
+</html>

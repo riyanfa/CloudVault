@@ -3,9 +3,17 @@ name = "cloudvault"
 version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
+    "boto3>=1.34",
+    "dj-database-url>=2.2",
     "django==6.0.6",
+    "django-storages[s3]>=1.14.6",
     "djangorestframework==3.17.1",
     "drf-spectacular==0.29.0",
     "djangorestframework-simplejwt==5.5.1",
-    "django_extensions"
+    "django_extensions",
+    "djangorestframework-stubs>=3.17.0",
+    "gunicorn>=23.0",
+    "psycopg[binary]>=3.2",
+    "whitenoise>=6.9",
+    "dj-config-url>=0.1.1",
 ]

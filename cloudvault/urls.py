@@ -17,11 +17,13 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import include, path
+from django.views.generic import TemplateView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from app.views import register
 
 urlpatterns = [
+    path("", TemplateView.as_view(template_name="index.html"), name="dashboard"),
     path("admin/", admin.site.urls),
     path("api/", include("app.urls")),
     path("api/auth/login/", TokenObtainPairView.as_view(), name="token_obtain_pair"),

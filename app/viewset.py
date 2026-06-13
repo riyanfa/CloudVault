@@ -3,7 +3,7 @@ from django.db.models import Q
 from django.http import FileResponse
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.generics import get_object_or_404
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
@@ -169,7 +169,7 @@ class FileViewSet(ModelViewSet):
 
         shared_folder_ids = get_shared_folder_tree_ids(self.request.user)
 
-        return (
+        queryset = (
             File.objects.filter(
                 Q(owner=self.request.user)
                 | Q(shared_with=self.request.user)
@@ -178,6 +178,11 @@ class FileViewSet(ModelViewSet):
             .distinct()
             .order_by("-uploaded_at")
         )
+
+        if self.request.query_params.get("folder") == "root":
+            queryset = queryset.filter(folder__isnull=True)
+
+        return queryset
 
     def perform_create(self, serializer):
         uploaded_file = self.request.FILES.get("file")
@@ -211,6 +216,10 @@ class FileViewSet(ModelViewSet):
     @action(detail=True, methods=["get"])
     def download(self, request, file_uuid=None):
         file_obj = self.get_object()
+        if not file_obj.file or not file_obj.file.storage.exists(file_obj.file.name):
+            raise NotFound("File is no longer available in storage.")
+
+        file_obj.file.open("rb")
         return FileResponse(
             file_obj.file,
             as_attachment=True,

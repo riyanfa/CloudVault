@@ -1,8 +1,7 @@
 # CloudVault
 
-CloudVault is a Django REST Framework API for cloud-style file storage. It supports JWT authentication, folder nesting, file upload/download, ownership rules, and read-only sharing.
-
-This project is built for education and portfolio demonstration. It is not production-ready as-is.
+CloudVault is a Django REST Framework API for file storage. It supports JWT authentication, nested folders,
+file upload/download, ownership rules, sharing, local storage, and S3 storage.
 
 ## Features
 
@@ -16,7 +15,7 @@ This project is built for education and portfolio demonstration. It is not produ
 - Shared access is read-only for non-owners
 - Direct file sharing by username
 - File metadata tracking: original file name, content type, size, upload timestamp, owner username
-- File upload validation for size, content type, extension, and empty files
+- File upload validation for size, filename safety, and empty files
 - UUID-based file and folder lookups
 - API tests covering ownership, sharing, nested folder access, and validation
 
@@ -27,19 +26,8 @@ This project is built for education and portfolio demonstration. It is not produ
 - Django REST Framework
 - Simple JWT
 - SQLite for local development
-- AWS S3 integration in progress
-
-## Local Development Notes
-
-This project currently uses SQLite and local media storage for development. Uploaded files are stored under the configured `MEDIA_ROOT`; S3/private object storage integration is being developed.
-
-Important limitations:
-
-- `DEBUG=True` is enabled for local development.
-- `SECRET_KEY` is hardcoded for education/local use.
-- Upload validation is basic and should still be hardened before production.
-- There is no trash/recycle-bin flow; deleting a folder cascades to its subfolders and files.
-- S3/private object storage integration is in progress and is not yet the active storage flow.
+- Hybrid local filesystem or AWS S3 media storage
+- WhiteNoise static files for deployment
 
 ## Setup
 
@@ -49,6 +37,12 @@ Install dependencies:
 
 ```bash
 uv sync
+```
+
+Create local environment values:
+
+```bash
+cp .env.example .env
 ```
 
 Apply migrations:
@@ -70,35 +64,108 @@ uv run python manage.py check
 uv run python manage.py test app
 ```
 
+## Storage Configuration
+
+CloudVault supports two media storage modes:
+
+| Mode  | Environment                        | Behavior                                           |
+|-------|------------------------------------|----------------------------------------------------|
+| Local | `CLOUDVAULT_STORAGE_BACKEND=local` | Stores uploaded files under `MEDIA_ROOT`           |
+| S3    | `CLOUDVAULT_STORAGE_BACKEND=s3`    | Stores uploaded files in `AWS_STORAGE_BUCKET_NAME` |
+
+Local storage is the default, so development and tests do not require AWS credentials.
+
+For S3, set:
+
+```bash
+CLOUDVAULT_STORAGE_BACKEND=s3
+AWS_STORAGE_BUCKET_NAME=your-private-bucket
+AWS_S3_REGION_NAME=eu-east-1
+```
+
+Do not make the bucket public for this API. The app checks permissions before downloads and stores private,
+server-side encrypted S3 objects.
+
+## AWS Deployment Notes
+
+Required production environment values:
+
+```bash
+DJANGO_DEBUG=False
+DJANGO_SECRET_KEY=<strong-secret>
+DJANGO_ALLOWED_HOSTS=<your-domain>,<aws-hostname>
+CLOUDVAULT_STORAGE_BACKEND=s3
+AWS_STORAGE_BUCKET_NAME=<bucket-name>
+AWS_S3_REGION_NAME=<bucket-region>
+```
+
+Optional production database:
+
+```bash
+DATABASE_URL=postgresql://<user>:<password>@<host>:5432/<database>
+```
+
+Run the production server with:
+
+```bash
+gunicorn cloudvault.wsgi:application
+```
+
+Before deploying, run:
+
+```bash
+uv run python manage.py collectstatic --noinput
+uv run python manage.py migrate
+uv run python manage.py check --deploy
+```
+
+The AWS role or user running the app needs S3 permissions for the selected bucket, including object read, write, delete,
+and list access.
+
 Regenerate the OpenAPI schema:
 
 ```bash
 uv run python manage.py spectacular --file schema.yaml --validate
 ```
 
+## Web Dashboard
+
+The project includes a lightweight dashboard at `/` that uses the same REST API as external clients. It supports:
+
+- Register and sign in
+- Folder browsing and creation
+- File upload and download
+- Rename, share, and delete actions for owned files and folders
+
+Run the development server and open:
+
+```bash
+http://127.0.0.1:8000/
+```
+
 ## API Overview
 
 ### Authentication
 
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/api/auth/register/` | Register a new user and return JWT tokens |
-| POST | `/api/auth/login/` | Obtain JWT access and refresh tokens |
-| POST | `/api/auth/refresh/` | Refresh access token |
-| GET | `/api/whoami` | Return the authenticated user |
+| Method | Endpoint              | Description                               |
+|--------|-----------------------|-------------------------------------------|
+| POST   | `/api/auth/register/` | Register a new user and return JWT tokens |
+| POST   | `/api/auth/login/`    | Obtain JWT access and refresh tokens      |
+| POST   | `/api/auth/refresh/`  | Refresh access token                      |
+| GET    | `/api/whoami`         | Return the authenticated user             |
 
 ### Folders
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/folders/` | List folders owned by or shared with the user |
-| POST | `/api/folders/` | Create a folder |
-| GET | `/api/folders/{folder_uuid}/` | Retrieve a folder |
-| PATCH | `/api/folders/{folder_uuid}/` | Update a folder; owner only |
-| DELETE | `/api/folders/{folder_uuid}/` | Delete a folder; owner only |
-| GET | `/api/folders/{folder_uuid}/files/` | List files directly inside a folder |
-| POST | `/api/folders/{folder_uuid}/share/` | Share a folder by username; owner only |
-| POST | `/api/folders/{folder_uuid}/remove_share/` | Remove folder share by username; owner only |
+| Method | Endpoint                                   | Description                                   |
+|--------|--------------------------------------------|-----------------------------------------------|
+| GET    | `/api/folders/`                            | List folders owned by or shared with the user |
+| POST   | `/api/folders/`                            | Create a folder                               |
+| GET    | `/api/folders/{folder_uuid}/`              | Retrieve a folder                             |
+| PATCH  | `/api/folders/{folder_uuid}/`              | Update a folder; owner only                   |
+| DELETE | `/api/folders/{folder_uuid}/`              | Delete a folder; owner only                   |
+| GET    | `/api/folders/{folder_uuid}/files/`        | List files directly inside a folder           |
+| POST   | `/api/folders/{folder_uuid}/share/`        | Share a folder by username; owner only        |
+| POST   | `/api/folders/{folder_uuid}/remove_share/` | Remove folder share by username; owner only   |
 
 Folder sharing behavior:
 
@@ -108,20 +175,21 @@ Folder sharing behavior:
 
 ### Files
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/files/` | List files owned by, directly shared with, or available through shared folders |
-| POST | `/api/files/` | Upload a file |
-| GET | `/api/files/{file_uuid}/` | Retrieve file metadata |
-| PATCH | `/api/files/{file_uuid}/` | Update file metadata or move folder; owner only |
-| DELETE | `/api/files/{file_uuid}/` | Delete a file; owner only |
-| GET | `/api/files/{file_uuid}/download/` | Download a file |
-| POST | `/api/files/{file_uuid}/share/` | Share a file by username; owner only |
-| POST | `/api/files/{file_uuid}/remove_share/` | Remove file share by username; owner only |
+| Method | Endpoint                               | Description                                                                    |
+|--------|----------------------------------------|--------------------------------------------------------------------------------|
+| GET    | `/api/files/`                          | List files owned by, directly shared with, or available through shared folders |
+| POST   | `/api/files/`                          | Upload a file                                                                  |
+| GET    | `/api/files/{file_uuid}/`              | Retrieve file metadata                                                         |
+| PATCH  | `/api/files/{file_uuid}/`              | Update file metadata or move folder; owner only                                |
+| DELETE | `/api/files/{file_uuid}/`              | Delete a file; owner only                                                      |
+| GET    | `/api/files/{file_uuid}/download/`     | Download a file                                                                |
+| POST   | `/api/files/{file_uuid}/share/`        | Share a file by username; owner only                                           |
+| POST   | `/api/files/{file_uuid}/remove_share/` | Remove file share by username; owner only                                      |
 
 File sharing behavior:
 
-- A file can be accessed if the user owns it, it is directly shared with them, or it is inside a folder shared with them.
+- A file can be accessed if the user owns it, it is directly shared with them, or it is inside a folder shared with
+  them.
 - Removing direct file sharing does not remove access if the file is still inside a shared folder.
 
 ## Example Usage

@@ -28,6 +28,13 @@ class CloudVaultAPITests(APITestCase):
     def authenticate(self, user):
         self.client.force_authenticate(user=user)
 
+    def test_dashboard_frontend_loads(self):
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertContains(response, "CloudVault")
+        self.assertContains(response, "dashboard.js")
+
     def test_create_folder_uses_serializer_parent_folder_validation(self):
         parent_folder = Folder.objects.create(
             owner=self.owner,
@@ -154,7 +161,7 @@ class CloudVaultAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("file", response.data)
 
-    def test_upload_file_rejects_disallowed_type(self):
+    def test_upload_file_accepts_arbitrary_file_type(self):
         self.authenticate(self.owner)
 
         response = self.client.post(
@@ -169,8 +176,44 @@ class CloudVaultAPITests(APITestCase):
             format="multipart",
         )
 
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(File.objects.filter(file_name="script.exe").exists())
+
+    def test_upload_file_rejects_blank_original_filename(self):
+        self.authenticate(self.owner)
+
+        response = self.client.post(
+            "/api/files/",
+            {
+                "file": SimpleUploadedFile(
+                    "   ",
+                    b"hello",
+                    content_type="text/plain",
+                ),
+            },
+            format="multipart",
+        )
+
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("file", response.data)
+
+    def test_upload_file_accepts_declared_type_without_signature_check(self):
+        self.authenticate(self.owner)
+
+        response = self.client.post(
+            "/api/files/",
+            {
+                "file": SimpleUploadedFile(
+                    "fake.png",
+                    b"not a png",
+                    content_type="image/png",
+                ),
+            },
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(File.objects.filter(file_name="fake.png").exists())
 
     def test_upload_file_rejects_oversized_file(self):
         self.authenticate(self.owner)
@@ -190,6 +233,65 @@ class CloudVaultAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("file", response.data)
+
+    def test_update_file_moves_to_folder(self):
+        folder = Folder.objects.create(owner=self.owner, folder_name="Target")
+        file_obj = File.objects.create(
+            owner=self.owner,
+            file_name="move.txt",
+            file_type="text/plain",
+            file_size=5,
+            file=SimpleUploadedFile(
+                "move.txt",
+                b"hello",
+                content_type="text/plain",
+            ),
+        )
+        self.authenticate(self.owner)
+
+        response = self.client.patch(
+            f"/api/files/{file_obj.file_uuid}/",
+            {"folder": str(folder.folder_uuid)},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        file_obj.refresh_from_db()
+        self.assertEqual(file_obj.folder, folder)
+
+    def test_file_list_root_query_excludes_folder_files(self):
+        folder = Folder.objects.create(owner=self.owner, folder_name="Target")
+        File.objects.create(
+            owner=self.owner,
+            file_name="root.txt",
+            file_type="text/plain",
+            file_size=5,
+            file=SimpleUploadedFile(
+                "root.txt",
+                b"hello",
+                content_type="text/plain",
+            ),
+        )
+        File.objects.create(
+            owner=self.owner,
+            file_name="nested.txt",
+            file_type="text/plain",
+            file_size=5,
+            file=SimpleUploadedFile(
+                "nested.txt",
+                b"hello",
+                content_type="text/plain",
+            ),
+            folder=folder,
+        )
+        self.authenticate(self.owner)
+
+        response = self.client.get("/api/files/?folder=root")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        file_names = {item["file_name"] for item in response.data}
+        self.assertIn("root.txt", file_names)
+        self.assertNotIn("nested.txt", file_names)
 
     def test_delete_file_removes_uploaded_file_from_storage(self):
         self.authenticate(self.owner)
@@ -216,6 +318,21 @@ class CloudVaultAPITests(APITestCase):
 
         self.assertEqual(delete_response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(storage.exists(file_name))
+
+    def test_download_missing_storage_file_returns_not_found(self):
+        file_obj = File.objects.create(
+            owner=self.owner,
+            file_name="missing.png",
+            file_type="image/png",
+            file_size=5,
+            file="files/user_1/missing.png",
+        )
+        self.authenticate(self.owner)
+
+        response = self.client.get(f"/api/files/{file_obj.file_uuid}/download/")
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "File is no longer available in storage.")
 
     def test_shared_folder_files_lists_files_for_shared_user(self):
         folder = Folder.objects.create(owner=self.owner, folder_name="Shared")

@@ -131,9 +131,7 @@ class FileSerializer(serializers.ModelSerializer):
 
     def validate_file(self, uploaded_file):
         max_size = settings.CLOUDVAULT_MAX_UPLOAD_SIZE
-        allowed_types = settings.CLOUDVAULT_ALLOWED_FILE_TYPES
-        allowed_extensions = settings.CLOUDVAULT_ALLOWED_FILE_EXTENSIONS
-        extension = os.path.splitext(uploaded_file.name)[1].lower()
+        uploaded_file.name = self.validate_file_name(uploaded_file.name)
 
         if uploaded_file.size == 0:
             raise serializers.ValidationError("File cannot be empty.")
@@ -143,12 +141,6 @@ class FileSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 f"File size cannot exceed {max_size_mb} MB."
             )
-
-        if uploaded_file.content_type not in allowed_types:
-            raise serializers.ValidationError("File type is not allowed.")
-
-        if extension not in allowed_extensions:
-            raise serializers.ValidationError("File extension is not allowed.")
 
         return uploaded_file
 

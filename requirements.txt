@@ -1,4 +1,10 @@
+boto3>=1.34
+dj-database-url>=2.2
 Django==6.0.6
+django-storages[s3]>=1.14.6
 djangorestframework==3.17.1
 djangorestframework_simplejwt==5.5.1
 drf_spectacular==0.29.0
+gunicorn>=23.0
+psycopg[binary]>=3.2
+whitenoise>=6.9
